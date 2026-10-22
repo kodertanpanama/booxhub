@@ -19,7 +19,8 @@ function corsFor(req: Request) {
   return corsHeaders;
 }
 
-const DEMO_PASSWORD = Deno.env.get("DEMO_PASSWORD") ?? "DemoPerhentian2026!";
+// Wajib ditetapkan sebagai rahsia Supabase; tiada nilai lalai.
+const DEMO_PASSWORD = Deno.env.get("DEMO_PASSWORD");
 
 const ACCOUNTS = [
   { key: "admin", email: "admin@demo.perhentianbay.my", full_name: "Demo Admin" },
@@ -68,6 +69,10 @@ function json(req: Request, body: unknown, status = 200) {
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 200, headers: corsFor(req) });
+  }
+
+  if (!DEMO_PASSWORD) {
+    return json(req, { error: "Server misconfigured: DEMO_PASSWORD secret is not set." }, 500);
   }
 
   try {
@@ -119,12 +124,12 @@ Deno.serve(async (req: Request) => {
     for (const acc of ACCOUNTS) {
       const id = byEmail.get(acc.email);
       if (id) {
-        const { error } = await admin.auth.admin.updateUserById(id, { password: DEMO_PASSWORD });
+        const { error } = await admin.auth.admin.updateUserById(id, { password: DEMO_PASSWORD as string });
         if (error) throw error;
       } else {
         const { error } = await admin.auth.admin.createUser({
           email: acc.email,
-          password: DEMO_PASSWORD,
+          password: DEMO_PASSWORD as string,
           email_confirm: true,
           app_metadata: { demo: true },
           user_metadata: { full_name: acc.full_name },

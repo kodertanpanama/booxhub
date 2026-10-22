@@ -6,6 +6,15 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
+function timingSafeEqual(a: string, b: string): boolean {
+  const enc = new TextEncoder();
+  const x = enc.encode(a), y = enc.encode(b);
+  if (x.length !== y.length) return false;
+  let diff = 0;
+  for (let i = 0; i < x.length; i++) diff |= x[i] ^ y[i];
+  return diff === 0;
+}
+
 function icsDate(d: string | Date): string {
   const dt = typeof d === "string" ? new Date(d + "T00:00:00Z") : d;
   return dt.toISOString().replace(/[-:]/g, "").split("T")[0] + "T000000Z";
@@ -23,6 +32,14 @@ Deno.serve(async (req: Request) => {
   try {
     const url = new URL(req.url);
     // Laluan: /ical-export?token=<suapan>&slug=<slug-bilik>&scope=all
+    const expected = Deno.env.get("ICAL_EXPORT_TOKEN");
+    if (!expected) {
+      return new Response("Server misconfigured: ICAL_EXPORT_TOKEN secret is not set.", { status: 500, headers: corsHeaders });
+    }
+    const token = url.searchParams.get("token") ?? "";
+    if (!timingSafeEqual(token, expected)) {
+      return new Response("Unauthorized", { status: 401, headers: corsHeaders });
+    }
     const slug = url.searchParams.get("slug");
     if (!slug) {
       return new Response("slug diperlukan", { status: 400, headers: corsHeaders });

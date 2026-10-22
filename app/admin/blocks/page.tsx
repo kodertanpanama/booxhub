@@ -49,8 +49,11 @@ const SOURCE_META: Record<string, { label: string; className: string }> = {
 
 // Build the public iCal export URL for a room type slug. Edge functions sit
 // on <project>.functions.supabase.co, not inside the /rest/v1 path.
+// The feed now requires ?token= matching the ICAL_EXPORT_TOKEN Supabase secret.
+// The secret is never shipped to the browser: replace the placeholder before
+// pasting the URL into the OTA.
 function icalExportUrl(slug: string) {
-  return `${process.env.NEXT_PUBLIC_SUPABASE_URL!.replace(/\.supabase\.co$/, '')}.functions.supabase.co/ical-export?slug=${slug}`;
+  return `${process.env.NEXT_PUBLIC_SUPABASE_URL!.replace(/\.supabase\.co$/, '')}.functions.supabase.co/ical-export?slug=${slug}&token=<ICAL_EXPORT_TOKEN>`;
 }
 
 function BlockDialog({ rooms, onClose, onSaved }: {
